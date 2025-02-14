@@ -47,7 +47,9 @@ const Chat: React.FC = () => {
           <div
             key={`think-${index}`}
             className={`mb-2 p-2 rounded text-sm ${
-              darkMode ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-800"
+              darkMode
+                ? "bg-gray-700 text-gray-300"
+                : "bg-gray-100 text-gray-800"
             }`}
           >
             🤔 {part}
@@ -58,7 +60,7 @@ const Chat: React.FC = () => {
         let match;
 
         while ((match = codeRegex.exec(part)) !== null) {
-          const [_, lang, code] = match;
+          const [fullMatch, lang, code] = match;
           const currentKey = `code-${index}-${match.index}`;
 
           if (match.index > lastIndex) {
@@ -113,7 +115,9 @@ const Chat: React.FC = () => {
                 </div>
               </div>
               <pre className="overflow-x-auto text-sm  p-7">
-                <code className={`${darkMode ? "text-gray-100" : "text-gray-800"}`}>
+                <code
+                  className={`${darkMode ? "text-gray-100" : "text-gray-800"}`}
+                >
                   {code}
                 </code>
               </pre>
@@ -136,7 +140,7 @@ const Chat: React.FC = () => {
   const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setMessage(value);
-    const rows = Math.min(Math.max(value.split('\n').length, 1), 6);
+    const rows = Math.min(Math.max(value.split("\n").length, 1), 6);
     setTextareaRows(rows);
   };
 
@@ -186,12 +190,32 @@ const Chat: React.FC = () => {
     }
   };
 
-  const averageResponseTime = responseTimes.length > 0 
-    ? (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length).toFixed(1)
-    : 0;
+  // const averageResponseTime = responseTimes.length > 0
+  //   ? (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length).toFixed(1)
+  //   : 0;
+
+  {
+    responseTimes.length > 0 && (
+      <div
+        className={`text-xs ${
+          darkMode ? "text-gray-400" : "text-gray-600"
+        } mt-2`}
+      >
+        Average response time:{" "}
+        {(
+          responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
+        ).toFixed(1)}
+        s
+      </div>
+    );
+  }
 
   return (
-    <div className={`min-h-screen w-full ${darkMode ? "bg-gray-900 text-white" : "bg-gray-100"}`}>
+    <div
+      className={`min-h-screen w-full ${
+        darkMode ? "bg-gray-900 text-white" : "bg-gray-100"
+      }`}
+    >
       <div className="container mx-auto h-screen p-4 flex flex-col items-center">
         <div className="w-full lg:w-3/5 flex flex-col h-full">
           <div className="flex justify-between items-center mb-4 gap-2">
@@ -207,16 +231,20 @@ const Chat: React.FC = () => {
             <button
               onClick={() => setDarkMode(!darkMode)}
               className={`p-2 rounded-lg ${
-                darkMode ? "bg-gray-700 hover:bg-gray-600" : "bg-white hover:bg-gray-50"
+                darkMode
+                  ? "bg-gray-700 hover:bg-gray-600"
+                  : "bg-white hover:bg-gray-50"
               } transition-colors`}
             >
               {darkMode ? "🌙" : "☀️"}
             </button>
           </div>
-          
-          <div className={`flex-1 rounded-lg p-4 overflow-y-auto relative ${
-            darkMode ? "bg-gray-800" : "bg-white"
-          }`}>
+
+          <div
+            className={`flex-1 rounded-lg p-4 overflow-y-auto relative ${
+              darkMode ? "bg-gray-800" : "bg-white"
+            }`}
+          >
             {responses.map((res, index) => (
               <div
                 key={index}
@@ -241,7 +269,11 @@ const Chat: React.FC = () => {
                           : "bg-gray-200 hover:bg-gray-300 text-gray-700"
                       }`}
                     >
-                      <span className={showThink ? "text-green-400" : "text-red-400"}>
+                      <span
+                        className={
+                          showThink ? "text-green-400" : "text-red-400"
+                        }
+                      >
                         •
                       </span>
                       {showThink ? "Thoughts" : "Hidden"}

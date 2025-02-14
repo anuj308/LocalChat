@@ -35,9 +35,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: 'API request failed' },
-      { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } }
-    );
+    return NextResponse.json({ error: "Error processing request" }, { status: 500 });
   }
+  
 }
