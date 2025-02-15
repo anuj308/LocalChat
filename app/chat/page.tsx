@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-
+// import 
 type MessageType = {
   type: "user" | "bot";
   text: string;
@@ -34,8 +34,8 @@ const Chat: React.FC = () => {
     localStorage.setItem("model", model);
   }, [darkMode, showThink, model]);
 
-  const parseResponse = (text: string) => {
-    const elements: JSX.Element[] = [];
+  const parseResponse = (text: string): React.JSX.Element[] => {
+    const elements: React.JSX.Element[] = [];
     const thinkRegex = /<think>([\s\S]*?)<\/think>/g;
     const codeRegex = /```(\w+)?\n([\s\S]*?)```/g;
 
@@ -60,7 +60,7 @@ const Chat: React.FC = () => {
         let match;
 
         while ((match = codeRegex.exec(part)) !== null) {
-          const [fullMatch, lang, code] = match;
+          const [ lang, code] = match;
           const currentKey = `code-${index}-${match.index}`;
 
           if (match.index > lastIndex) {
@@ -183,16 +183,22 @@ const Chat: React.FC = () => {
             : [...prev, { type: "bot", text: botResponse }];
         });
       }
+      const duration = Math.round((Date.now() - startTime) / 1000);
+      setResponses(prev => {
+        return prev.map((msg, index) => {
+          if (index === prev.length - 1 && msg.type === "bot") {
+            return { ...msg, duration };
+          }
+          return msg;
+        });
+      });
+
     } catch (error) {
       console.error("Error:", error);
     } finally {
       setIsLoading(false);
     }
   };
-
-  // const averageResponseTime = responseTimes.length > 0
-  //   ? (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length).toFixed(1)
-  //   : 0;
 
   {
     responseTimes.length > 0 && (
