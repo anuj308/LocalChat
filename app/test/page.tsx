@@ -8,7 +8,7 @@ type MessageType = {
   duration?: number;
 };
 
-const Home: React.FC = () => {
+const Test: React.FC = () => {
   const [message, setMessage] = useState<string>("");
   const [responses, setResponses] = useState<MessageType[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -126,7 +126,7 @@ const Home: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch("/api/reason", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -305,4 +305,4 @@ const Home: React.FC = () => {
   );
 };
 
-export default Home;
+export default Test;

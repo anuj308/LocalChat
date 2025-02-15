@@ -9,34 +9,24 @@ const openai = new OpenAI({
 export async function POST(req: Request) {
   try {
     const { messages, model } = await req.json();
-    
-    const stream = await openai.chat.completions.create({
+
+    const completion = await openai.chat.completions.create({
       model: model,
       messages: messages,
-      stream: true,
+      // Removed stream: true to get complete response
     });
 
-    const encoder = new TextEncoder();
-    
-    const readableStream = new ReadableStream({
-      async start(controller) {
-        for await (const chunk of stream) {
-          const content = chunk.choices[0]?.delta?.content || '';
-          controller.enqueue(encoder.encode(content));
-        }
-        controller.close();
-      },
-    });
+    const content = completion.choices[0]?.message?.content || '';
 
-    return new Response(readableStream, {
+    return new Response(content, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'Access-Control-Allow-Origin': '*',
       },
     });
   } catch (_) {
-     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-     void _; // Explicitly mark `_` as unused
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    void _; // Explicitly mark `_` as unused
     return NextResponse.json({ error: "Error processing request" }, { status: 500 });
   }
 }
