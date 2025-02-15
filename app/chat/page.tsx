@@ -137,8 +137,8 @@ const Chat: React.FC = () => {
               </li>
             </ol>
             <p className="mt-3 text-xs opacity-75">
-              Ensure the model name matches exactly what you've downloaded via
-              Ollama.
+              Ensure the model name matches exactly what you downloaded
+              via Ollama.
             </p>
           </div>
         </div>

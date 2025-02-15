@@ -34,8 +34,9 @@ export async function POST(req: Request) {
         'Access-Control-Allow-Origin': '*',
       },
     });
-  } catch (error) {
+  } catch (_) {
+     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     void _; // Explicitly mark `_` as unused
     return NextResponse.json({ error: "Error processing request" }, { status: 500 });
   }
-  
 }

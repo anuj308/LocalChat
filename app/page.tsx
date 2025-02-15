@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-// import 
+// import
 type MessageType = {
   type: "user" | "bot";
   text: string;
@@ -17,7 +17,6 @@ const Home: React.FC = () => {
   const [showThink, setShowThink] = useState<boolean>(true);
   const [textareaRows, setTextareaRows] = useState<number>(1);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [responseTimes, setResponseTimes] = useState<number[]>([]);
 
   useEffect(() => {
     const savedDarkMode = localStorage.getItem("darkMode") === "true";
@@ -38,23 +37,11 @@ const Home: React.FC = () => {
     const elements: React.JSX.Element[] = [];
     const thinkRegex = /<think>([\s\S]*?)<\/think>/g;
     const codeRegex = /```(\w+)?\n([\s\S]*?)```/g;
-
     const parts = text.split(thinkRegex);
 
     parts.forEach((part, index) => {
       if (index % 2 === 1 && showThink) {
-        elements.push(
-          <div
-            key={`think-${index}`}
-            className={`mb-2 p-2 rounded text-sm ${
-              darkMode
-                ? "bg-gray-700 text-gray-300"
-                : "bg-gray-100 text-gray-800"
-            }`}
-          >
-            🤔 {part}
-          </div>
-        );
+        elements.push(<span key={`think-${index}`}>{part}</span>);
       } else if (index % 2 === 0) {
         let lastIndex = 0;
         let match;
@@ -65,7 +52,7 @@ const Home: React.FC = () => {
 
           if (match.index > lastIndex) {
             elements.push(
-              <span key={`text-${index}-${lastIndex}`}>
+              <span key={`text-${lastIndex}`}>
                 {part.substring(lastIndex, match.index)}
               </span>
             );
@@ -74,61 +61,46 @@ const Home: React.FC = () => {
           elements.push(
             <div
               key={currentKey}
-              className={`relative my-4 rounded-lg ${
-                darkMode ? "bg-gray-900" : "bg-gray-100"
+              className={` transition-colors p-1.5 rounded-lg mx-2 overflow-x-auto ${
+                darkMode
+                  ? "text-gray-300 bg-black"
+                  : "text-gray-800 hover:bg-gray-200"
               }`}
+              title="Copy code"
             >
-              <div className="flex justify-between items-center mb-2 sticky top-0 z-10 bg-inherit py-2">
-                <span
-                  className={`text-sm px-5 ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
+              <div className="flex justify-between mx-2">
+                <button
+                  className={`p-1 rounded ${
+                    darkMode ? "hover:bg-gray-600" : "hover:bg-gray-300"
                   }`}
                 >
                   {lang || "code"}
-                </span>
-                <div className="flex items-center gap-2">
-                  {copiedKey === currentKey && (
-                    <span
-                      className={`text-xs ${
-                        darkMode ? "text-gray-400" : "text-gray-600"
-                      }`}
-                    >
-                      Copied!
-                    </span>
-                  )}
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(code);
-                      setCopiedKey(currentKey);
-                      setTimeout(() => setCopiedKey(null), 2000);
-                    }}
-                    className={`transition-colors p-1.5 rounded-lg mx-2 ${
-                      darkMode
-                        ? "text-gray-300 hover:bg-gray-700"
-                        : "text-gray-800 hover:bg-gray-200"
-                    }`}
-                    title="Copy code"
-                  >
-                    {/* 📋 */}
-                    copy
-                  </button>
-                </div>
-              </div>
-              <pre className="overflow-x-auto text-sm  p-7">
-                <code
-                  className={`${darkMode ? "text-gray-100" : "text-gray-800"}`}
+                </button>
+                <button
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(code);
+                    setCopiedKey(currentKey);
+                    setTimeout(() => setCopiedKey(null), 2000);
+                  }}
+                  className={`p-1 rounded ${
+                    darkMode ? "hover:bg-gray-600" : "hover:bg-gray-300"
+                  }`}
                 >
-                  {code}
-                </code>
+                  {copiedKey === currentKey ? "Copied!" : " Copy"}
+                </button>
+              </div>
+              <pre>
+                <code>{code}</code>
               </pre>
             </div>
           );
+
           lastIndex = codeRegex.lastIndex;
         }
 
         if (lastIndex < part.length) {
           elements.push(
-            <span key={`text-${index}-end`}>{part.substring(lastIndex)}</span>
+            <span key={`text-${lastIndex}`}>{part.substring(lastIndex)}</span>
           );
         }
       }
@@ -170,8 +142,6 @@ const Home: React.FC = () => {
       while (reader) {
         const { done, value } = await reader.read();
         if (done) {
-          const duration = Math.round((Date.now() - startTime) / 1000);
-          setResponseTimes((prev) => [...prev, duration]);
           break;
         }
         botResponse += decoder.decode(value);
@@ -184,7 +154,7 @@ const Home: React.FC = () => {
         });
       }
       const duration = Math.round((Date.now() - startTime) / 1000);
-      setResponses(prev => {
+      setResponses((prev) => {
         return prev.map((msg, index) => {
           if (index === prev.length - 1 && msg.type === "bot") {
             return { ...msg, duration };
@@ -192,29 +162,12 @@ const Home: React.FC = () => {
           return msg;
         });
       });
-
     } catch (error) {
       console.error("Error:", error);
     } finally {
       setIsLoading(false);
     }
   };
-
-  {
-    responseTimes.length > 0 && (
-      <div
-        className={`text-xs ${
-          darkMode ? "text-gray-400" : "text-gray-600"
-        } mt-2`}
-      >
-        Average response time:{" "}
-        {(
-          responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
-        ).toFixed(1)}
-        s
-      </div>
-    );
-  }
 
   return (
     <div
@@ -266,10 +219,10 @@ const Home: React.FC = () => {
                 style={{ wordBreak: "break-word" }}
               >
                 {res.type === "bot" && (
-                  <div className="absolute -top-3 right-2">
+                  <div className="absolute -top-3 left-2">
                     <button
                       onClick={() => setShowThink(!showThink)}
-                      className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${
+                      className={`px-3 py-2 rounded-xl text-xs flex items-center gap-1 ${
                         darkMode
                           ? "bg-gray-600 hover:bg-gray-500 text-gray-300"
                           : "bg-gray-200 hover:bg-gray-300 text-gray-700"
@@ -280,22 +233,37 @@ const Home: React.FC = () => {
                           showThink ? "text-green-400" : "text-red-400"
                         }
                       >
-                        •
+                        {/* • */}
+                        🤔
                       </span>
-                      {showThink ? "Thoughts" : "Hidden"}
+                      Thinking
+                      {showThink ? "^ " : "V"}
                     </button>
                   </div>
                 )}
-                {res.type === "bot" ? parseResponse(res.text) : res.text}
                 {res.type === "bot" && res.duration && (
-                  <div
-                    className={`text-xs mt-2 ${
-                      darkMode ? "text-gray-400" : "text-gray-600"
-                    }`}
-                  >
-                    Response time: {res.duration}
+                  <div className="absolute -top-3 left-2">
+                    <button
+                      onClick={() => setShowThink(!showThink)}
+                      className={`px-3 py-2 rounded-xl text-xs flex items-center gap-1 ${
+                        darkMode
+                          ? "bg-gray-600 hover:bg-gray-500 text-gray-300"
+                          : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                      }`}
+                    >
+                      Thought for {res.duration} seconds
+                      <span
+                        className={
+                          showThink ? "text-green-400" : "text-red-400"
+                        }
+                      >
+                        {showThink ? "^ " : "V"}
+                      </span>
+                    </button>
                   </div>
                 )}
+
+                {res.type === "bot" ? parseResponse(res.text) : res.text}
               </div>
             ))}
           </div>
