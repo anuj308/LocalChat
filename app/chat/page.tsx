@@ -1,11 +1,9 @@
 "use client";
-import React, { useState, useEffect } from "react";
-// import 
+import React, { useState } from "react";
+
 type MessageType = {
   type: "user" | "bot";
   text: string;
-  timestamp?: number;
-  duration?: number;
 };
 
 const Chat: React.FC = () => {
@@ -13,186 +11,64 @@ const Chat: React.FC = () => {
   const [responses, setResponses] = useState<MessageType[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [darkMode, setDarkMode] = useState<boolean>(false);
-  const [model, setModel] = useState<string>("DeepSeek-R1");
-  const [showThink, setShowThink] = useState<boolean>(true);
-  const [textareaRows, setTextareaRows] = useState<number>(1);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [responseTimes, setResponseTimes] = useState<number[]>([]);
-
-  useEffect(() => {
-    const savedDarkMode = localStorage.getItem("darkMode") === "true";
-    const savedShowThink = localStorage.getItem("showThink") !== "false";
-    const savedModel = localStorage.getItem("model") || "DeepSeek-R1";
-    setDarkMode(savedDarkMode);
-    setShowThink(savedShowThink);
-    setModel(savedModel);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("darkMode", darkMode.toString());
-    localStorage.setItem("showThink", showThink.toString());
-    localStorage.setItem("model", model);
-  }, [darkMode, showThink, model]);
-
-  const parseResponse = (text: string): React.JSX.Element[] => {
-    const elements: React.JSX.Element[] = [];
-    const thinkRegex = /<think>([\s\S]*?)<\/think>/g;
-    const codeRegex = /```(\w+)?\n([\s\S]*?)```/g;
-
-    const parts = text.split(thinkRegex);
-
-    parts.forEach((part, index) => {
-      if (index % 2 === 1 && showThink) {
-        elements.push(
-          <div
-            key={`think-${index}`}
-            className={`mb-2 p-2 rounded text-sm ${
-              darkMode
-                ? "bg-gray-700 text-gray-300"
-                : "bg-gray-100 text-gray-800"
-            }`}
-          >
-            🤔 {part}
-          </div>
-        );
-      } else if (index % 2 === 0) {
-        let lastIndex = 0;
-        let match;
-
-        while ((match = codeRegex.exec(part)) !== null) {
-          const [ lang, code] = match;
-          const currentKey = `code-${index}-${match.index}`;
-
-          if (match.index > lastIndex) {
-            elements.push(
-              <span key={`text-${index}-${lastIndex}`}>
-                {part.substring(lastIndex, match.index)}
-              </span>
-            );
-          }
-
-          elements.push(
-            <div
-              key={currentKey}
-              className={`relative my-4 rounded-lg ${
-                darkMode ? "bg-gray-900" : "bg-gray-100"
-              }`}
-            >
-              <div className="flex justify-between items-center mb-2 sticky top-0 z-10 bg-inherit py-2">
-                <span
-                  className={`text-sm px-5 ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  {lang || "code"}
-                </span>
-                <div className="flex items-center gap-2">
-                  {copiedKey === currentKey && (
-                    <span
-                      className={`text-xs ${
-                        darkMode ? "text-gray-400" : "text-gray-600"
-                      }`}
-                    >
-                      Copied!
-                    </span>
-                  )}
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(code);
-                      setCopiedKey(currentKey);
-                      setTimeout(() => setCopiedKey(null), 2000);
-                    }}
-                    className={`transition-colors p-1.5 rounded-lg mx-2 ${
-                      darkMode
-                        ? "text-gray-300 hover:bg-gray-700"
-                        : "text-gray-800 hover:bg-gray-200"
-                    }`}
-                    title="Copy code"
-                  >
-                    {/* 📋 */}
-                    copy
-                  </button>
-                </div>
-              </div>
-              <pre className="overflow-x-auto text-sm  p-7">
-                <code
-                  className={`${darkMode ? "text-gray-100" : "text-gray-800"}`}
-                >
-                  {code}
-                </code>
-              </pre>
-            </div>
-          );
-          lastIndex = codeRegex.lastIndex;
-        }
-
-        if (lastIndex < part.length) {
-          elements.push(
-            <span key={`text-${index}-end`}>{part.substring(lastIndex)}</span>
-          );
-        }
-      }
-    });
-
-    return elements;
-  };
-
-  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    setMessage(value);
-    const rows = Math.min(Math.max(value.split("\n").length, 1), 6);
-    setTextareaRows(rows);
-  };
+  const [model, setModel] = useState<string>("deepseek-r1:1.5b");
 
   const handleSend = async () => {
     if (!message.trim()) return;
 
-    const startTime = Date.now();
     setResponses((prev) => [...prev, { type: "user", text: message }]);
     setMessage("");
-    setTextareaRows(1);
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch("http://localhost:11434/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: model,
-          messages: [{ role: "user", content: message }],
+          prompt: message,
         }),
       });
 
-      const reader = response.body?.getReader();
+      if (!response.ok || !response.body) throw new Error("Request failed");
+
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let botResponse = "";
 
-      while (reader) {
+      while (true) {
         const { done, value } = await reader.read();
-        if (done) {
-          const duration = Math.round((Date.now() - startTime) / 1000);
-          setResponseTimes((prev) => [...prev, duration]);
-          break;
-        }
-        botResponse += decoder.decode(value);
+        if (done) break;
 
-        setResponses((prev) => {
-          const last = prev[prev.length - 1];
-          return last?.type === "bot"
-            ? [...prev.slice(0, -1), { type: "bot", text: botResponse }]
-            : [...prev, { type: "bot", text: botResponse }];
-        });
-      }
-      const duration = Math.round((Date.now() - startTime) / 1000);
-      setResponses(prev => {
-        return prev.map((msg, index) => {
-          if (index === prev.length - 1 && msg.type === "bot") {
-            return { ...msg, duration };
+        const chunk = decoder.decode(value, { stream: true });
+        const jsonChunks = chunk.split("\n").filter(Boolean);
+
+        for (const jsonChunk of jsonChunks) {
+          try {
+            const parsedChunk = JSON.parse(jsonChunk);
+            if (parsedChunk.response) {
+              // Add line break after </think> tag
+              botResponse += parsedChunk.response.replace(
+                /<\/think>/g,
+                "</think>\n\n"
+              );
+
+              setResponses((prev) => {
+                const last = prev[prev.length - 1];
+                if (last?.type === "bot") {
+                  return [
+                    ...prev.slice(0, -1),
+                    { type: "bot", text: botResponse },
+                  ];
+                }
+                return [...prev, { type: "bot", text: botResponse }];
+              });
+            }
+          } catch (error) {
+            console.error("Error parsing chunk:", error);
           }
-          return msg;
-        });
-      });
-
+        }
+      }
     } catch (error) {
       console.error("Error:", error);
     } finally {
@@ -200,21 +76,12 @@ const Chat: React.FC = () => {
     }
   };
 
-  {
-    responseTimes.length > 0 && (
-      <div
-        className={`text-xs ${
-          darkMode ? "text-gray-400" : "text-gray-600"
-        } mt-2`}
-      >
-        Average response time:{" "}
-        {(
-          responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
-        ).toFixed(1)}
-        s
-      </div>
-    );
-  }
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
   return (
     <div
@@ -222,39 +89,92 @@ const Chat: React.FC = () => {
         darkMode ? "bg-gray-900 text-white" : "bg-gray-100"
       }`}
     >
-      <div className="container mx-auto h-screen p-4 flex flex-col items-center">
+      <div className="container mx-auto h-screen p-4 flex flex-row items-center">
+        {/* Add informational message here */}
+        <div className="w-80 mx-6">
+          <div
+            className={`mb-4 p-4 rounded-lg ${
+              darkMode
+                ? "bg-gray-700/50 border border-gray-600"
+                : "bg-gray-200/80 border border-gray-300"
+            }`}
+          >
+            <div className="flex items-start mb-2">
+              <span className="mr-2">ℹ️</span>
+              <h3 className="font-semibold text-lg">
+                Requirements for Local Operation
+              </h3>
+            </div>
+            <p className="text-sm mb-3">This chat interface requires:</p>
+            <ol className="list-decimal list-inside space-y-2 text-sm">
+              <li>
+                <span className="font-medium">Ollama Installation</span>
+                <ul className="list-disc list-inside ml-4 text-gray-500">
+                  <li>
+                    Download from{" "}
+                    <a
+                      href="https://ollama.ai"
+                      target="_blank"
+                      className="text-blue-400 hover:underline"
+                    >
+                      ollama.ai
+                    </a>
+                  </li>
+                  <li>Install following platform instructions</li>
+                </ul>
+              </li>
+              <li>
+                <span className="font-medium">Start Ollama Server</span>
+                <code className="ml-2 p-1 bg-gray-700/30 rounded text-xs font-mono">
+                  ollama serve
+                </code>
+              </li>
+              <li>
+                <span className="font-medium">Download Model</span>
+                <code className="ml-2 p-1 bg-gray-700/30 rounded text-xs font-mono">
+                  ollama pull {model}
+                </code>
+              </li>
+            </ol>
+            <p className="mt-3 text-xs opacity-75">
+              Ensure the model name matches exactly what you've downloaded via
+              Ollama.
+            </p>
+          </div>
+        </div>
+
         <div className="w-full lg:w-3/5 flex flex-col h-full">
-          <div className="flex justify-between items-center mb-4 gap-2">
+          <div className="flex justify-between items-center mb-4">
             <input
               type="text"
               value={model}
               onChange={(e) => setModel(e.target.value)}
               className={`p-2 rounded-lg ${
-                darkMode ? "bg-gray-700 text-white" : "bg-white text-gray-800"
-              } flex-grow`}
+                darkMode ? "bg-gray-700 text-white" : "bg-white text-black"
+              } flex-grow mr-2`}
               placeholder="Model name"
             />
             <button
               onClick={() => setDarkMode(!darkMode)}
-              className={`p-2 rounded-lg ${
+              className={`px-4 py-2 rounded-lg ${
                 darkMode
-                  ? "bg-gray-700 hover:bg-gray-600"
-                  : "bg-white hover:bg-gray-50"
-              } transition-colors`}
+                  ? "bg-gray-700 text-white hover:bg-gray-600"
+                  : "bg-gray-200 text-black hover:bg-gray-300"
+              }`}
             >
               {darkMode ? "🌙" : "☀️"}
             </button>
           </div>
 
           <div
-            className={`flex-1 rounded-lg p-4 overflow-y-auto relative ${
+            className={`flex-1 rounded-lg p-4 overflow-y-auto ${
               darkMode ? "bg-gray-800" : "bg-white"
             }`}
           >
             {responses.map((res, index) => (
               <div
                 key={index}
-                className={`mb-4 p-3 rounded-lg whitespace-pre-wrap relative ${
+                className={`mb-4 p-3 rounded-lg whitespace-pre-wrap ${
                   res.type === "user"
                     ? darkMode
                       ? "bg-blue-600 ml-20"
@@ -265,64 +185,26 @@ const Chat: React.FC = () => {
                 }`}
                 style={{ wordBreak: "break-word" }}
               >
-                {res.type === "bot" && (
-                  <div className="absolute -top-3 right-2">
-                    <button
-                      onClick={() => setShowThink(!showThink)}
-                      className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${
-                        darkMode
-                          ? "bg-gray-600 hover:bg-gray-500 text-gray-300"
-                          : "bg-gray-200 hover:bg-gray-300 text-gray-700"
-                      }`}
-                    >
-                      <span
-                        className={
-                          showThink ? "text-green-400" : "text-red-400"
-                        }
-                      >
-                        •
-                      </span>
-                      {showThink ? "Thoughts" : "Hidden"}
-                    </button>
-                  </div>
-                )}
-                {res.type === "bot" ? parseResponse(res.text) : res.text}
-                {res.type === "bot" && res.duration && (
-                  <div
-                    className={`text-xs mt-2 ${
-                      darkMode ? "text-gray-400" : "text-gray-600"
-                    }`}
-                  >
-                    Response time: {res.duration}
-                  </div>
-                )}
+                {res.text}
               </div>
             ))}
           </div>
 
           <div className="mt-4 flex">
-            <textarea
+            <input
+              type="text"
               value={message}
-              onChange={handleMessageChange}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyPress}
               placeholder="Type your message..."
-              rows={textareaRows}
-              className={`flex-grow p-2 rounded-l-lg resize-none overflow-y-auto ${
-                darkMode ? "bg-gray-700 text-white" : "bg-white text-gray-800"
-              } focus:outline-none focus:ring-2 ${
-                darkMode ? "focus:ring-blue-500" : "focus:ring-blue-400"
-              }`}
-              style={{ minHeight: "2.5rem", maxHeight: "8rem" }}
+              className={`flex-grow p-2 rounded-l-lg ${
+                darkMode ? "bg-gray-700 text-white" : "bg-white text-black"
+              } focus:outline-none`}
             />
             <button
               onClick={handleSend}
               disabled={isLoading}
-              className={`px-6 py-2 rounded-r-lg transition-colors ${
+              className={`px-6 py-2 rounded-r-lg ${
                 darkMode
                   ? "bg-blue-600 hover:bg-blue-700"
                   : "bg-blue-500 hover:bg-blue-600 text-white"
