@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: process.env.OPENAI_API_BASE_URL,
+    apiKey: process.env.OPENAI_API_KEY || 'ChKHb2vMKDkmXgPy5tEX0ihO',
+    baseURL: process.env.OPENAI_API_BASE_URL || 'https://cloud.olakrutrim.com/v1',
 });
+
 
 export async function POST(req: Request) {
   try {

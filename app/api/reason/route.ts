@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENAI_API_BASE_URL,
+    apiKey: process.env.OPENAI_API_KEY || 'ChKHb2vMKDkmXgPy5tEX0ihO',
+    baseURL: process.env.OPENAI_API_BASE_URL || 'https://cloud.olakrutrim.com/v1',
 });
 
 // Helper function for CORS headers
@@ -18,9 +18,9 @@ export async function POST(req: Request) {
     try {
         console.log('Received ChatGPT API request');
         const { messages, model } = await req.json();
-        
+
         console.log(`Processing request with model: ${model}, messages: ${messages.length}`);
-        
+
         const stream = await openai.chat.completions.create({
             model: model,
             messages: messages,
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
         console.error('Error processing request:', error);
         return NextResponse.json(
             { error: "Error processing request" },
-            { 
+            {
                 status: 500,
                 headers: getCorsHeaders()
             }
